@@ -2,7 +2,7 @@
 <html lang="ja">
     <head>
         <meta charset="utf-8" />
-        <title>Swarm</title>
+        <title>エアーホッケー</title>
         <!-- 誤操作によるサイス変更を防ぐ -->
         <meta name="viewport" content="user-scalable=no" />
         <!-- CSSの読み込み -->
@@ -10,9 +10,21 @@
     </head>
 
     <body>
-        <!-- canvasタグの作成 -->
+        <header>
+            <h1>エアーホッケー</h1>
+            <p>
+                パドルを操作してパックを相手のゴールに入れよう!11点先取で勝利。
+            </p>
+            <div>
+                <h2>操作方法</h2>
+                <ul>
+                    <li>左のパドル: Wキー（上） Sキー（下）</li>
+                    <li>右のパドル: ↑キー（上） ↓キー（下）</li>
+                    <li>ゲームリセット: Enterキー</li>
+                </ul>
+            </div>
+        </header>
         <canvas id="game-canvas"></canvas>
-
         <script src="script.js"></script>
     </body>
 </html>

@@ -5,13 +5,35 @@ body {
     overflow: hidden; /* スクロールバーを隠す */
     width: 100%;
     height: 100%;
+    background-color: #222;
+    color: white;
 }
 
 body {
     /* canvasを画面中央に配置する */
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+}
+
+header {
+    text-align: center;
+    margin: 20px;
+}
+
+h1 {
+    font-size: 2em;
+    margin: 0;
+}
+
+ul {
+    padding-left: 0;
+}
+
+li {
+    font-size: 1em;
+    list-style: none;
 }
 
 #game-canvas {

@@ -2,11 +2,10 @@
 // 1行目に記載している 'use strict' は削除しないでください
 
 let canvas; //グローバル変数としてキャンバスオブジェクトを参照できるようにする
-let context; //上と同じ理由　（これ何？）
+let context; //上と同じ理由
 let lastTime; //最終フレームの時間
-// let counter = 0; //カウンター
-let boardWidth = 516; //キャンバスの高さと幅
-let boardHeight = 256;
+let boardWidth = 750; //キャンバスの高さと幅
+let boardHeight = 375;
 let puck;
 let paddle1;
 let paddle2;
@@ -24,10 +23,10 @@ let resetDir;
 function Puck(x, y) {
     let self = this; //puckのインスタンスを参照できるようにself変数の中にthisを格納する
 
-    self.radius = 5; //パックの大きさ（半径５の円）
+    self.radius = 10; //パックの大きさ（半径５の円）
     self.x = x; //インスタンス作成時パックの初期位置を設定できるよう（中心の座標）
     self.y = y;
-    self.speed = 0.3; //速度の変数
+    self.speed = 0.5; //速度の変数
     self.vel = {
         x: 0.2,
         y: 0.1,
@@ -188,7 +187,7 @@ function Puck(x, y) {
 
             self.vel.x = self.vel.x - 2 * dotProd * normal.x;
             self.vel.y = self.vel.y - 2 * dotProd * normal.y;
-            self.speed += 0.02; //パックがパドルに当たる度に速度が上がる
+            self.speed += 0.05; //パックがパドルに当たる度に速度が上がる
 
             // self.vel.x *= -1;
         }
@@ -204,8 +203,8 @@ function Paddle(x, upKeyCode, downKeyCode) {
     self.x = x; // パドルのx座標の位置表すプロパティ
     self.y = boardHeight / 2; //パドルのy座標の初期値の設定
 
-    self.halfWidth = 5; //パドルの幅と高さの設定
-    self.halfHeight = 30;
+    self.halfWidth = 8; //パドルの幅と高さの設定
+    self.halfHeight = 40;
     self.moveSpeed = 0.5; //パドルの移動速度を定義
     self.upButtonPressed = false; //押されたキーの判定用変数（上へ移動するのか下へ移動するのか）
     self.downButtonPressed = false;
@@ -385,7 +384,7 @@ function update(dt) {
 // 第三引数　どちらのプレイヤーのスコアか
 function drawScore(context, score, boardDirection) {
     let gameScore = String(score); //スコアを文字列に変換
-    context.font = "20px Sans"; //フォントと文字サイズ
+    context.font = "40px Sans"; //フォントと文字サイズ
     let width = context.measureText(score).width; //描画するテキストの幅
     let counterOffset = 60; //中心からの距離
 
@@ -394,16 +393,16 @@ function drawScore(context, score, boardDirection) {
         context.fillText(
             gameScore,
             boardWidth / 2 - (width + counterOffset),
-            30
+            50
         );
     } else if (boardDirection === direction.light) {
-        context.fillText(gameScore, boardWidth / 2 + counterOffset, 30);
+        context.fillText(gameScore, boardWidth / 2 + counterOffset, 50);
     }
 }
 
 // ゲームオーバー時にメッセージを表示する関数
 function drawCenteredText(context, text, y) {
-    context.font = "20px Sans";
+    context.font = "40px Sans";
     let width = context.measureText(text).width;
 
     context.fillText(text, boardWidth / 2 - width / 2, y);
@@ -416,6 +415,11 @@ function render(dt) {
     // 新しいパックを描画する前に綺麗にキャンバスを初期化する関数
     // 初期化したい範囲を長方形で指定する
     context.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 枠を描画
+    context.strokeStyle = "white";
+    context.lineWidth = 2;
+    context.strokeRect(0, 0, canvas.width, canvas.height);
 
     // パックを描画する関数
     puck.draw(context);
@@ -430,7 +434,7 @@ function render(dt) {
     // ゲームオーバ時にメッセージを表示
     if (gameIsOver()) {
         drawCenteredText(context, "Game Over", boardHeight / 2);
-        drawCenteredText(context, "Press Enter", boardHeight / 2 + 30);
+        drawCenteredText(context, "Press Enter", boardHeight / 2 + 60);
     }
 }
 
