@@ -84,20 +84,6 @@ function Puck(x, y) {
         context.beginPath(); //現在のパスをリセットして新しいパスを作成することができる
         context.arc(self.x, self.y, self.radius, 0, 2 * Math.PI); //context.arcは本来扇型を描画する関数ですが、中心角を360度(radianで設定するため2π)にすることで円が描ける
         context.fill(); //パスの内部エリアを塗りつぶす
-
-        // // 衝突判定テスト用
-        // let fillColor = "white";
-        // if (
-        //     self.collidesWithPaddle(paddle1) ||
-        //     self.collidesWithPaddle(paddle2)
-        // ) {
-        //     fillColor = "red";
-        // }
-
-        // context.fillStyle = fillColor;
-        // context.beginPath();
-        // context.arc(self.x, self.y, self.radius, 0, 2 * Math.PI);
-        // context.fill();
     };
 
     // パックの再配置する関数
@@ -106,7 +92,7 @@ function Puck(x, y) {
     self.reset = function (boardDirection) {
         self.x = boardWidth / 2;
         self.y = boardHeight / 2;
-        self.speed = 0.3;
+        self.speed = 0.5;
 
         // パックの方向をミスをしたプレイヤー側に動かす
         if (boardDirection === direction.left) {
@@ -189,8 +175,6 @@ function Puck(x, y) {
             self.vel.x = self.vel.x - 2 * dotProd * normal.x;
             self.vel.y = self.vel.y - 2 * dotProd * normal.y;
             self.speed += 0.05; //パックがパドルに当たる度に速度が上がる
-
-            // self.vel.x *= -1;
         }
     };
 }
@@ -349,7 +333,7 @@ function init() {
 // ゲーム終了を知らせる関数
 // どちらが11点を取ったらtrueを返す
 function gameIsOver() {
-    return score1 >= 11 || score2 >= 11;
+    return score1 >= 3 || score2 >= 3;
 }
 
 // 初期化されたときにパックが左右どっちから出るかランダムで決める
