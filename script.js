@@ -17,6 +17,7 @@ let direction = {
     light: 1,
 };
 let resetDir;
+let gameStarted = false;
 
 // パックオブジェクト（白球？）(クラス判定だから大文字？)
 // 引数はパックの初期位置
@@ -29,7 +30,7 @@ function Puck(x, y) {
     self.speed = 0.5; //速度の変数
     self.vel = {
         x: 0.2,
-        y: 0.1,
+        y: 0.2,
     }; // self.velX = 0.1; self.velY = 0.1;  向きのベクトル（Xが水平方向）（Yが垂直方向）
 
     normalize(self.vel);
@@ -297,16 +298,16 @@ function normalize(v) {
 function dot(u, v) {
     return u.x * v.x + u.y * v.y;
 }
+
 // キャンバスなどのゲームに必要な各変数の初期化と、
 // イベントハンドラ（イベントが発生したときに呼び出される処理）の登録
 function init() {
-    // console.log("init!");
     canvas = document.getElementById("game-canvas"); //idの取得
     canvas.width = boardWidth;
     canvas.height = boardHeight;
 
     //初期化
-    puck = new Puck(100, 100);
+    puck = new Puck(boardWidth / 2, boardHeight / 2);
     paddle1 = new Paddle(10, 87, 83); //87=W, 83=S
     paddle2 = new Paddle(boardWidth - 10, 38, 40); //38=上矢印, 40=下矢印
 
@@ -320,8 +321,15 @@ function init() {
         paddle2.onKeyDown(e.keyCode);
 
         // Enterキーが押されるとゲームリセットする
-        if (e.keyCode === 13 && gameIsOver()) {
-            resetGame();
+        if (e.keyCode === 13) {
+            if (gameIsOver()) {
+                resetGame();
+            }
+            if (!gameStarted) {
+                gameStarted = true;
+                lastTime = performance.now(); //現在時刻のミリ秒の取得
+                main();
+            }
         }
     });
 
@@ -335,7 +343,7 @@ function init() {
 
     context = canvas.getContext("2d"); //キャンバス要素であるcontextを取得しする（キャンバスに線や図形を描画したり、色をつけたりすることが出来る）
 
-    lastTime = performance.now(); //現在時刻のミリ秒の取得
+    render();
 }
 
 // ゲーム終了を知らせる関数
@@ -349,7 +357,7 @@ function resetDirection() {
     const num = Math.random();
     if (num < 0.5) {
         resetDir = direction.left;
-    } else if (num >= 0.5) {
+    } else {
         resetDir = direction.light;
     }
 }
@@ -368,9 +376,6 @@ function resetGame() {
 
 // 1秒間で60回呼び出される、フレームごとのゲームの状態を更新する機能を担当する関数(時間と連動するためにdtを引数)
 function update(dt) {
-    // counter += 1;
-    // console.log(counter);
-
     // update関数内でパックのインスタンスが持つupdate関数を呼び出す
     puck.update(dt);
     paddle1.update(dt);
@@ -400,18 +405,24 @@ function drawScore(context, score, boardDirection) {
     }
 }
 
-// ゲームオーバー時にメッセージを表示する関数
-function drawCenteredText(context, text, y) {
+// 画面に入ったときにメッセージを表示する関数
+function drawStartedText(context, text, y) {
     context.font = "40px Sans";
+    context.fillStyle = "white";
     let width = context.measureText(text).width;
 
     context.fillText(text, boardWidth / 2 - width / 2, y);
 }
 
-// 現在のゲームの状態をキャンバスに書き出す機能を担当する関数(時間と連動するためにdtを引数)
-function render(dt) {
-    // console.log("render!");
+// ゲームオーバー時にメッセージを表示する関数
+function drawCenteredText(context, text, y) {
+    context.font = "40px Sans";
+    let width = context.measureText(text).width;
+    context.fillText(text, boardWidth / 2 - width / 2, y);
+}
 
+// 現在のゲームの状態をキャンバスに書き出す機能を担当する関数(時間と連動するためにdtを引数)
+function render() {
     // 新しいパックを描画する前に綺麗にキャンバスを初期化する関数
     // 初期化したい範囲を長方形で指定する
     context.clearRect(0, 0, canvas.width, canvas.height);
@@ -421,20 +432,25 @@ function render(dt) {
     context.lineWidth = 2;
     context.strokeRect(0, 0, canvas.width, canvas.height);
 
-    // パックを描画する関数
-    puck.draw(context);
-    // パドルを描画する関数
-    paddle1.draw(context);
-    paddle2.draw(context);
+    // ゲームスタート前にメッセージを表示
+    if (!gameStarted) {
+        drawStartedText(context, "Game Start!", boardHeight / 2);
+        drawStartedText(context, "Press Enter", boardHeight / 2 + 60);
+    } else {
+        // パックを描画する関数
+        puck.draw(context);
+        // パドルを描画する関数
+        paddle1.draw(context);
+        paddle2.draw(context);
+        // スコアを描画する関数
+        drawScore(context, score1, direction.left);
+        drawScore(context, score2, direction.light);
 
-    // スコアを描画する関数
-    drawScore(context, score1, direction.left);
-    drawScore(context, score2, direction.light);
-
-    // ゲームオーバ時にメッセージを表示
-    if (gameIsOver()) {
-        drawCenteredText(context, "Game Over", boardHeight / 2);
-        drawCenteredText(context, "Press Enter", boardHeight / 2 + 60);
+        // ゲームオーバ時にメッセージを表示
+        if (gameIsOver()) {
+            drawCenteredText(context, "Game Over", boardHeight / 2);
+            drawCenteredText(context, "Press Enter", boardHeight / 2 + 60);
+        }
     }
 }
 
@@ -450,13 +466,14 @@ function main() {
     }
 
     update(dt);
-    render(dt);
+    render();
 
     lastTime = now; //フレーム毎に時間を計測するために最終フレームの時刻を更新
 
-    requestAnimationFrame(main); //requestAnimationFrameを使用してmain自身を呼び出すことで、mainが実行されると、16ミリ秒ごとにmainを呼び出すループ (次のアニメーションフレームを呼び出す関数を引数にとる)（別のタブを見ているときは中断される）
+    if (gameStarted) {
+        requestAnimationFrame(main); //requestAnimationFrameを使用してmain自身を呼び出すことで、mainが実行されると、16ミリ秒ごとにmainを呼び出すループ (次のアニメーションフレームを呼び出す関数を引数にとる)（別のタブを見ているときは中断される）
+    }
 }
 
 // ループの仕組みの実行
 init(); //ゲームの初期化
-main(); //ループ
