@@ -10,6 +10,14 @@ let boardHeight = 256;
 let puck;
 let paddle1;
 let paddle2;
+let score1 = 0; //左のパドルのスコア
+let score2 = 0; //右のパドルのスコア
+// パックをサーブする時の左右の方向を決める定数
+let direction = {
+    left: 0,
+    light: 1,
+};
+let resetDir;
 
 // パックオブジェクト（白球？）(クラス判定だから大文字？)
 // 引数はパックの初期位置
@@ -19,7 +27,7 @@ function Puck(x, y) {
     self.radius = 5; //パックの大きさ（半径５の円）
     self.x = x; //インスタンス作成時パックの初期位置を設定できるよう（中心の座標）
     self.y = y;
-    self.speed = 0.5; //速度の変数
+    self.speed = 0.3; //速度の変数
     self.vel = {
         x: 0.2,
         y: 0.1,
@@ -33,17 +41,29 @@ function Puck(x, y) {
         self.x += self.vel.x * self.speed * dt; //移動後の座標（水平方向）　速さベクトル
         self.y += self.vel.y * self.speed * dt; //（垂直方向）
 
-        // 上下左右で座標を比較して、はみ出る位置で速度を反転させる
-
-        // 右の壁での跳ね返り
+        // (右の壁での跳ね返り)
+        // 右の壁にパックが届いたらスクリーンの中心に戻す
         if (self.x + self.radius > boardWidth) {
+            // ゲームオーバーになると全ての壁でパックが跳ね返る
             self.vel.x *= -1;
             self.x = boardWidth - self.radius;
+
+            // ゲームオーバーでないときのみスコアが更新される
+            if (!gameIsOver()) {
+                self.reset(direction.light);
+                score1++; //左に一点入る
+            }
         }
-        // 左の壁での跳ね返り
+        // （左の壁での跳ね返り）
+        // 右の壁にパックが届いたらスクリーンの中心に戻す
         if (self.x - self.radius < 0) {
             self.vel.x *= -1;
             self.x = self.radius;
+
+            if (!gameIsOver()) {
+                self.reset(direction.left);
+                score2++; //右に一点入る
+            }
         }
         // 下の壁での跳ね返り
         if (self.y + self.radius > boardHeight) {
@@ -78,6 +98,31 @@ function Puck(x, y) {
         // context.beginPath();
         // context.arc(self.x, self.y, self.radius, 0, 2 * Math.PI);
         // context.fill();
+    };
+
+    // パックの再配置する関数
+    // パックの位置がスクリーンの中心になるようにする
+    // 引数
+    self.reset = function (boardDirection) {
+        self.x = boardWidth / 2;
+        self.y = boardHeight / 2;
+        self.speed = 0.3;
+
+        // パックの方向をミスをしたプレイヤー側に動かす
+        if (boardDirection === direction.left) {
+            self.vel = {
+                x: 0.2,
+                y: 0.2,
+            };
+        } else if (boardDirection === direction.light) {
+            self.vel = {
+                x: -0.2,
+                y: 0.2,
+            };
+        }
+
+        // 正規化
+        normalize(self.vel);
     };
 
     // パドルと衝突した時にtrueを返す関数
@@ -143,6 +188,7 @@ function Puck(x, y) {
 
             self.vel.x = self.vel.x - 2 * dotProd * normal.x;
             self.vel.y = self.vel.y - 2 * dotProd * normal.y;
+            self.speed += 0.02; //パックがパドルに当たる度に速度が上がる
 
             // self.vel.x *= -1;
         }
@@ -159,7 +205,7 @@ function Paddle(x, upKeyCode, downKeyCode) {
     self.y = boardHeight / 2; //パドルのy座標の初期値の設定
 
     self.halfWidth = 5; //パドルの幅と高さの設定
-    self.halfHeight = 20;
+    self.halfHeight = 30;
     self.moveSpeed = 0.5; //パドルの移動速度を定義
     self.upButtonPressed = false; //押されたキーの判定用変数（上へ移動するのか下へ移動するのか）
     self.downButtonPressed = false;
@@ -216,6 +262,11 @@ function Paddle(x, upKeyCode, downKeyCode) {
             self.halfHeight * 2
         );
     };
+
+    // 新しいゲーム時にパドルを初期位置に戻す関数
+    self.reset = function () {
+        self.y = boardHeight / 2;
+    };
 }
 
 // 円の中心と最も近い長方形の外周の点を計算する関数
@@ -245,7 +296,7 @@ function normalize(v) {
 // ドット積を求める関数
 // ドット積とは2つのベクトルのなす角(向きの違い)を数値化したもの
 function dot(u, v) {
-    return u.x * v.x + u.y * u.y;
+    return u.x * v.x + u.y * v.y;
 }
 // キャンバスなどのゲームに必要な各変数の初期化と、
 // イベントハンドラ（イベントが発生したときに呼び出される処理）の登録
@@ -268,6 +319,11 @@ function init() {
         //onKeyDown関数を呼び出す
         paddle1.onKeyDown(e.keyCode);
         paddle2.onKeyDown(e.keyCode);
+
+        // Enterキーが押されるとゲームリセットする
+        if (e.keyCode === 13 && gameIsOver()) {
+            resetGame();
+        }
     });
 
     //離されたときに発火するイベント
@@ -281,6 +337,34 @@ function init() {
     context = canvas.getContext("2d"); //キャンバス要素であるcontextを取得しする（キャンバスに線や図形を描画したり、色をつけたりすることが出来る）
 
     lastTime = performance.now(); //現在時刻のミリ秒の取得
+}
+
+// ゲーム終了を知らせる関数
+// どちらが11点を取ったらtrueを返す
+function gameIsOver() {
+    return score1 >= 11 || score2 >= 11;
+}
+
+// 初期化されたときにパックが左右どっちから出るかランダムで決める
+function resetDirection() {
+    const num = Math.random();
+    if (num < 0.5) {
+        resetDir = direction.left;
+    } else if (num >= 0.5) {
+        resetDir = direction.light;
+    }
+}
+
+// ゲームを初期化する関数
+function resetGame() {
+    paddle1.reset();
+    paddle2.reset();
+
+    resetDirection();
+    puck.reset(resetDir);
+
+    score1 = 0;
+    score2 = 0;
 }
 
 // 1秒間で60回呼び出される、フレームごとのゲームの状態を更新する機能を担当する関数(時間と連動するためにdtを引数)
@@ -297,6 +381,34 @@ function update(dt) {
     puck.handlePaddleCollision(paddle2);
 }
 
+// スコアを描画する関数
+// 第三引数　どちらのプレイヤーのスコアか
+function drawScore(context, score, boardDirection) {
+    let gameScore = String(score); //スコアを文字列に変換
+    context.font = "20px Sans"; //フォントと文字サイズ
+    let width = context.measureText(score).width; //描画するテキストの幅
+    let counterOffset = 60; //中心からの距離
+
+    // 左右判定と表示
+    if (boardDirection === direction.left) {
+        context.fillText(
+            gameScore,
+            boardWidth / 2 - (width + counterOffset),
+            30
+        );
+    } else if (boardDirection === direction.light) {
+        context.fillText(gameScore, boardWidth / 2 + counterOffset, 30);
+    }
+}
+
+// ゲームオーバー時にメッセージを表示する関数
+function drawCenteredText(context, text, y) {
+    context.font = "20px Sans";
+    let width = context.measureText(text).width;
+
+    context.fillText(text, boardWidth / 2 - width / 2, y);
+}
+
 // 現在のゲームの状態をキャンバスに書き出す機能を担当する関数(時間と連動するためにdtを引数)
 function render(dt) {
     // console.log("render!");
@@ -310,6 +422,16 @@ function render(dt) {
     // パドルを描画する関数
     paddle1.draw(context);
     paddle2.draw(context);
+
+    // スコアを描画する関数
+    drawScore(context, score1, direction.left);
+    drawScore(context, score2, direction.light);
+
+    // ゲームオーバ時にメッセージを表示
+    if (gameIsOver()) {
+        drawCenteredText(context, "Game Over", boardHeight / 2);
+        drawCenteredText(context, "Press Enter", boardHeight / 2 + 30);
+    }
 }
 
 // update関数とrender関数を呼び出す関数
